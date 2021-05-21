@@ -398,7 +398,7 @@ class QuantumCircuit:
                  └───┘
         """
         circ = QuantumCircuit(*reversed(self.qregs), *reversed(self.cregs),
-                              name=self.name)
+                              name=self.name, global_phase=self.global_phase)
         num_qubits = self.num_qubits
         num_clbits = self.num_clbits
         old_qubits = self.qubits
@@ -1220,7 +1220,8 @@ class QuantumCircuit:
             for element2 in list2:
                 if element2.name == element1.name:
                     if element1 != element2:
-                        raise CircuitError("circuits are not compatible")
+                        raise CircuitError("circuits are not compatible:"
+                                           f" registers {element1} and {element2} not compatible")
 
     @staticmethod
     def _get_composite_circuit_qasm_from_instruction(instruction):
@@ -1877,7 +1878,6 @@ class QuantumCircuit:
         for node in new_dag.topological_op_nodes():
             # Get arguments for classical condition (if any)
             inst = node.op.copy()
-            inst.condition = node.condition
             circ.append(inst, node.qargs, node.cargs)
 
         circ.clbits.clear()
@@ -1926,12 +1926,10 @@ class QuantumCircuit:
         if isinstance(angle, ParameterExpression) and angle.parameters:
             self._global_phase = angle
         else:
-            # Set the phase to the [-2 * pi, 2 * pi] interval
+            # Set the phase to the [0, 2π) interval
             angle = float(angle)
             if not angle:
                 self._global_phase = 0
-            elif angle < 0:
-                self._global_phase = angle % (-2 * np.pi)
             else:
                 self._global_phase = angle % (2 * np.pi)
 
@@ -2529,7 +2527,7 @@ class QuantumCircuit:
 
         The multi-cX gate can be implemented using different techniques, which use different numbers
         of ancilla qubits and have varying circuit depth. These modes are:
-        - 'no-ancilla': Requires 0 ancilla qubits.
+        - 'noancilla': Requires 0 ancilla qubits.
         - 'recursion': Requires 1 ancilla qubit if more than 4 controls are used, otherwise 0.
         - 'v-chain': Requires 2 less ancillas than the number of control qubits.
         - 'v-chain-dirty': Same as for the clean ancillas (but the circuit will be longer).
