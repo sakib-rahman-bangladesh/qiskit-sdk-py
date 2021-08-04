@@ -13,6 +13,7 @@
 """Remove final measurements and barriers at the end of a circuit."""
 
 from qiskit.transpiler.basepasses import TransformationPass
+from qiskit.dagcircuit import DAGOpNode
 
 
 class RemoveFinalMeasurements(TransformationPass):
@@ -33,20 +34,20 @@ class RemoveFinalMeasurements(TransformationPass):
         Returns:
             DAGCircuit: the optimized DAG.
         """
-        final_op_types = ['measure', 'barrier']
+        final_op_types = ["measure", "barrier"]
         final_ops = []
         cregs_to_remove = dict()
         clbits_with_final_measures = set()
-        clbit_registers = {clbit: creg
-                           for creg in dag.cregs.values()
-                           for clbit in creg}
+        clbit_registers = {clbit: creg for creg in dag.cregs.values() for clbit in creg}
 
         for candidate_node in dag.named_nodes(*final_op_types):
             is_final_op = True
 
             for _, child_successors in dag.bfs_successors(candidate_node):
-                if any(suc.type == 'op' and suc.name not in final_op_types
-                       for suc in child_successors):
+                if any(
+                    isinstance(suc, DAGOpNode) and suc.name not in final_op_types
+                    for suc in child_successors
+                ):
                     is_final_op = False
                     break
 
